@@ -1,21 +1,15 @@
 @echo off
-echo ======================================
-echo   Qwen Omni Relay - Installer
-echo ======================================
+echo === Qwen Omni Relay Installer ===
 echo.
-echo This will add the relay to your startup.
-echo The relay runs minimized on the taskbar.
-echo You can right-click "Qwen Omni Relay" on the taskbar to close it.
-echo.
-echo For uninstall, run: uninstall-startup.bat
+echo This adds the relay to Windows startup.
+echo The relay runs minimized on taskbar.
+echo To uninstall, run: uninstall-startup.bat
 echo.
 pause
-echo Installing...
-powershell -Command "$WScriptShell = New-Object -ComObject WScript.Shell; $Shortcut = $WScriptShell.CreateShortcut([Environment]::GetFolderPath('Startup') + '\Qwen-Omni-Relay.lnk'); $Shortcut.TargetPath = 'wscript.exe'; $Shortcut.Arguments = '\"%~dp0start-min.vbs\"'; $Shortcut.WorkingDirectory = '%~dp0'; $Shortcut.WindowStyle = 7; $Shortcut.Save()"
-echo Done. Relay will start minimized after each login.
-echo Starting now...
-wscript.exe "%~dp0start-min.vbs"
+set DIR=%~dp0
+powershell -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Startup')+'\Qwen-Omni-Relay.lnk');$s.TargetPath='wscript.exe';$s.Arguments='\"'+$env:DIR+'start-min.vbs\"';$s.WorkingDirectory=$env:DIR;$s.Save()"
 echo.
-echo Relay is running (minimized on taskbar).
-echo Press any key to close this window.
+echo Installed. Starting now...
+start "" wscript.exe "%~dp0start-min.vbs"
+echo Done.
 pause
