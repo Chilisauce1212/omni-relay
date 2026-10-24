@@ -11,12 +11,11 @@
 ### Windows
 
 1. 下载 `omni-relay-win.zip`（[Releases](https://github.com/Chilisauce1212/omni-relay/releases)）
-2. 解压到任意目录（不要放在桌面临时文件夹，选个固定位置如 `C:\omni-relay`）
-3. **开机自启**：双击 `install-startup.bat` → 以后每次开机自动启动
-4. 或**手动启动**：双击 `start.bat`，保持窗口打开
-5. Chrome 扩展里填 API Key + Base URL 即可对话
+2. 解压到固定位置（如 `C:\omni-relay`）
+3. 右键 `install-service.bat` → **以管理员身份运行**
+4. Chrome 扩展填 API Key + Base URL → 开始对话
 
-> 中继只需在后台运行，不用每次对话前手动启动。开机跑一次，全天可用。
+> 安装后 relay 会作为系统服务运行：**开机自启、完全无窗口、被误关自动重启**。卸载：右键 `uninstall-service.bat` 以管理员身份运行。
 
 ### macOS / Linux
 
