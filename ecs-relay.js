@@ -1,43 +1,62 @@
-// Qwen-Omni 中继（ECS 版，支持 URL 参数）
-// 客户端：ws://IP:8765/?apikey=xxx&workspace=xxx&model=xxx
-// 参数可选——不传则用 config.json 兜底
+// Qwen-Omni / Gemini Live 通用中继
+// 客户端：ws://127.0.0.1:8765/?apikey=xxx&base_url=wss://...&model=xxx
+// base_url: 完整的 WebSocket 上游地址（不含 ?model=）
+// apikey: 鉴权用，作为 Authorization: Bearer 头
 
 const { WebSocketServer, WebSocket } = require('ws');
 const fs = require('fs');
 
 const PORT = process.env.PORT || 8765;
 
-// 读取本地兜底配置
-let fallback = { apiKey: '', workspaceId: '' };
+// 兜底配置
+let fallbackKey = '', fallbackUrl = '';
 try {
   const cfg = JSON.parse(fs.readFileSync('config.json', 'utf8'));
-  fallback = { apiKey: cfg.apiKey || '', workspaceId: cfg.workspaceId || '' };
+  fallbackKey = cfg.apiKey || '';
+  fallbackUrl = cfg.baseUrl || '';
 } catch (_) {}
 
 const wss = new WebSocketServer({ port: PORT }, () => {
-  console.log(`[relay] ECS 中继已启动，端口 ${PORT}`);
+  console.log(`[relay] 中继已启动，端口 ${PORT}`);
 });
 
 wss.on('connection', (clientWs, req) => {
   const url = new URL(req.url || '/', 'http://localhost');
-  const apiKey = url.searchParams.get('apikey') || fallback.apiKey;
-  const workspaceId = url.searchParams.get('workspace') || fallback.workspaceId;
+
+  let apikey = url.searchParams.get('apikey') || fallbackKey;
+  let baseUrl = url.searchParams.get('base_url') || fallbackUrl;
+
+  // 兼容旧版 workspace 参数：自动拼成百炼地址
+  const wsId = url.searchParams.get('workspace');
+  if (!baseUrl && wsId) {
+    baseUrl = `wss://${wsId}.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime`;
+  }
+
   const model = url.searchParams.get('model') || 'qwen3.8-omni-flash-realtime';
 
-  if (!apiKey || !workspaceId) {
-    console.error('[relay] 缺少 apikey 或 workspace');
-    clientWs.close(4001, 'Missing apikey or workspace');
+  if (!apikey || !baseUrl) {
+    console.error('[relay] 缺少 apikey 或 base_url');
+    clientWs.close(4001, 'Missing apikey or base_url');
     return;
   }
 
-  console.log(`[relay] 新连接 → ${workspaceId.slice(0, 10)}...`);
+  const upstreamUrl = baseUrl + '?model=' + encodeURIComponent(model);
 
-  const upstreamUrl = `wss://${workspaceId}.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=${encodeURIComponent(model)}`;
+  // 从 hostname 提取 workspace（百炼需要 X-DashScope-WorkSpace 头）
+  let workspaceId = '';
+  try {
+    const hostname = new URL(baseUrl).hostname;
+    const m = hostname.match(/^(ws-[^.]+)\./);
+    if (m) workspaceId = m[1];
+  } catch (_) {}
+
+  const extraHeaders = {};
+  if (workspaceId) extraHeaders['X-DashScope-WorkSpace'] = workspaceId;
+
+  console.log(`[relay] → ${upstreamUrl.slice(0, 80)}...`);
+
   const upstream = new WebSocket(upstreamUrl, {
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'X-DashScope-WorkSpace': workspaceId
-    }
+    headers: { 'Authorization': `Bearer ${apikey}`, ...extraHeaders }
   });
 
   const pending = [];
