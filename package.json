@@ -1,0 +1,13 @@
+{
+  "name": "qwen-audio-realtime-relay",
+  "version": "0.1.0",
+  "private": true,
+  "description": "本地 WebSocket 中继：为浏览器扩展补充 Authorization 头并透明转发 Qwen-Audio-Realtime 数据",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
